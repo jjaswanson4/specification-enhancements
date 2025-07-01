@@ -4,25 +4,25 @@
 
 > List the name(s) of the person driving the SUP to completion.
 > 
-> Complete as part of Phase 1: Research & Roadmap Alignment
+> Complete as part of Phase 2: Proposal Creation
 
 ## Summary
 
 > Provide a summary (in layman's terms) explaining the changes the SUP is proposing
 > 
-> Complete as part of Phase 1: Research & Roadmap Alignment
+> Complete as part of Phase 2: Proposal Creation
 
 ## Reason for proposal
 
 > Explain why this SUP is needed and how it improves on what we have in the specification
 > 
-> Complete as part of Phase 1: Research & Roadmap Alignment
+> Complete as part of Phase 2: Proposal Creation
 
 ## Requirements alignment acknowledgement
 
 > An acknowledgement that the SUP meets minimum requirements and doesn't introduce any requirements that are out of Margo's scope or vision. This section must have link(s) to applicable features and a statement about any requirements that were agreed to be out of scope for the SUP.
 > 
-> Complete as part of Phase 1: Research & Roadmap Alignment
+> Complete as part of Phase 2: Proposal Creation
 
 ## Technical proposal
 
