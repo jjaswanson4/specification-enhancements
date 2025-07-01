@@ -26,7 +26,7 @@
 
 ## Technical proposal
 
-> The SUPs' technical details. There must be enough technical details that someone can take the information in this section and implement it on their own.
+> The SUP's technical details. There must be enough technical details that someone can take the information in this section and implement it on their own.
 > 
 > Complete as part of Phase 3: SUP Technical Development
 
