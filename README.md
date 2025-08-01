@@ -1,4 +1,4 @@
-# specification-enhancements
+# Specification Enhancements
 
 ## Margo Members
 
@@ -6,4 +6,4 @@ Follow the [specification update proposal process](https://github.com/margo/Marg
 
 ## Non-Margo Members
 
-Details coming soon on how non-margo members can propose changes to the specification
+Details coming soon on how non-Margo members can propose changes to the specification
