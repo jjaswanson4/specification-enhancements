@@ -92,8 +92,44 @@ Required Ports to enable the edge to cloud communication
 ### API definition / documentation strategy
 - Initially this SUP proposes the usage of Open API REST definitions. 
 ### Working Prototype
-The development team is underway creating the Code First Sandbox. This strategy is being implemented by the dev team, and will be available for review in the coming weeks. 
+WIP for certain portions of this SUP regarding the prototype. Additionally, I have attached a WIP Open API specification within the SUP folder.
 
+### Mermaid diagram detailing the interaction patterns
+```mermaid
+sequenceDiagram
+    autonumber
+    participant Client
+    participant Server
+
+    Note over Client,Server: 🔐 Initial Trust Establishment
+
+    Client->>Server: GET /onboarding/certificate
+    Server-->>Client: certificate (base64-encoded Root CA)
+
+    Note over Client,Server: 🔒 TLS Handshake
+    Client->>Server: TLS ClientHello (TLS versions, cipher suites, random)
+    Server-->>Client: TLS ServerHello (chosen version, cipher, random)
+    Server-->>Client: X.509 certificate chain
+    Client->>Server: Client public X.509 certificate
+
+    Note over Server: Server verifies client cert and assigns UUID
+
+    Client->>Server: POST /onboarding with public_certificate
+    Server-->>Client: client_id, client_secret, endpoints list
+
+    Note over Client,Server: 🔑 Token Exchange
+
+    Client->>Server: POST /token (form-urlencoded: client_id, client_secret)
+    Server-->>Client: access_token (JWT), token_type: Bearer, expires_in: 3600
+
+    Note over Client,Server: 📡 Secure API Usage
+
+    Client->>Server: POST /client/{clientId}/capabilities
+    Server-->>Client: 201 Created
+
+    Client->>Server: POST /client/{clientId}/deployment/{deploymentId}/status
+    Server-->>Client: 201 Created
+```
 ## Alternatives considered (optional)
 
 > List any alternative solutions considered while working on the SUP and the reason for not choosing them. If the SUP owner knows that there is a risk of a competing SUP, this section can be used to make their case ahead of any potential votes on why their solution is better.

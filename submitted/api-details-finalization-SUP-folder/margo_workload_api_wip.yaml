@@ -1,0 +1,250 @@
+openapi: 3.0.3
+info:
+  title: Margo Workload Management API
+  version: 1.0.0
+  description: >
+    API for managing workloads on Margo-compliant edge devices.
+    Communication is secured using server-side TLS (TLS 1.3 preferred), and payloads are signed using device certificates.
+
+servers:
+  - url: https://wfm.margo.org/api/v1
+    description: Workload Fleet Manager API
+
+security:
+  - ServerTLS: []
+  - PayloadSignature: []
+
+paths:
+
+  /onboarding/certificate:
+    get:
+      summary: Download Root CA certificate
+      responses:
+        '200':
+          description: Root CA certificate
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  certificate:
+                    type: string
+                    description: Base64 encoded certificate text
+
+  /onboarding:
+    post:
+      summary: Complete onboarding and receive credentials
+      security:
+        - ServerTLS: []
+        - PayloadSignature: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                public_certificate:
+                  type: string
+                  description: Client's public X.509 certificate
+      responses:
+        '200':
+          description: Onboarding successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  client_id:
+                    type: string
+                  client_secret:
+                    type: string
+                  endpoints:
+                    type: array
+                    items:
+                      type: string
+
+  /token:
+    post:
+      summary: Retrieve bearer token
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                grant_type:
+                  type: string
+                  example: client_credentials
+                client_id:
+                  type: string
+                client_secret:
+                  type: string
+      responses:
+        '200':
+          description: Token response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                  token_type:
+                    type: string
+                    example: Bearer
+                  expires_in:
+                    type: integer
+                    example: 3600
+
+  /client/{clientId}/capabilities:
+    post:
+      summary: Report client capabilities
+      security:
+        - ServerTLS: []
+        - PayloadSignature: []
+      parameters:
+        - name: clientId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeviceCapabilities'
+      responses:
+        '201':
+          description: Capabilities reported successfully
+
+  /client/{clientId}/deployment/{deploymentId}/status:
+    post:
+      summary: Report deployment status
+      security:
+        - ServerTLS: []
+        - PayloadSignature: []
+      parameters:
+        - name: clientId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: deploymentId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeploymentStatus'
+      responses:
+        '201':
+          description: Deployment status updated
+
+components:
+  securitySchemes:
+    ServerTLS:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: >
+        Server-side TLS using X.509 certificates.
+        TLS 1.3 is preferred; TLS 1.2 is supported as fallback.
+        The client verifies the server certificate using a trusted Root CA.
+    PayloadSignature:
+      type: apiKey
+      in: header
+      name: X-Payload-Signature
+      description: >
+        Base64-encoded payload signature using SHA-256 and device certificate.
+        Format: <public_key>;<digital_signature>
+  schemas:
+    DeviceCapabilities:
+      type: object
+      required: [apiVersion, kind, properties]
+      properties:
+        apiVersion:
+          type: string
+        kind:
+          type: string
+          enum: [DeviceCapabilities]
+        properties:
+          type: object
+          required: [id, vendor, modelNumber, serialNumber, roles, resources]
+          properties:
+            id:
+              type: string
+            vendor:
+              type: string
+            modelNumber:
+              type: string
+            serialNumber:
+              type: string
+            roles:
+              type: array
+              items:
+                type: string
+                enum: [Standalone Cluster, Cluster Leader, Standalone Device]
+            resources:
+              type: object
+              required: [cpu, memory, storage]
+              properties:
+                cpu:
+                  type: object
+                  properties:
+                    cores:
+                      type: number
+                memory:
+                  type: string
+                storage:
+                  type: string
+
+    DeploymentStatus:
+      type: object
+      required: [apiVersion, kind, deploymentId, status, components]
+      properties:
+        apiVersion:
+          type: string
+        kind:
+          type: string
+          enum: [DeploymentStatus]
+        deploymentId:
+          type: string
+        status:
+          type: object
+          required: [state]
+          properties:
+            state:
+              type: string
+              enum: [Pending, Installing, Installed, Failed]
+            error:
+              type: object
+              properties:
+                code:
+                  type: string
+                message:
+                  type: string
+        components:
+          type: array
+          items:
+            type: object
+            required: [name, state]
+            properties:
+              name:
+                type: string
+              state:
+                type: string
+                enum: [Pending, Installing, Installed, Failed]
+              error:
+                type: object
+                properties:
+                  code:
+                    type: string
+                  message:
+                    type: string
