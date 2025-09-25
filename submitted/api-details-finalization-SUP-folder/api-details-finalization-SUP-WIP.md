@@ -55,35 +55,37 @@ This SUP is aligned with the following Technical Feature.
     - The device establishes a secure HTTPS connection using server-side TLS.
     - It validates the server’s identity using the public root CA certificate.
 > Note: Further onboarding details will be provided in a separate SUP submission.
-### API Security / Encryption strategy
+### API Security / Integrity strategy
 - To ensure completeness in the description, I have copied over a section from the specification shown below
-    - Due to the limitations of utilizing mTLS with common OT infrastructure components, such as TLS terminating HTTPS load-balancer or a HTTPS proxy doing lawful inspection, Margo has adopted a certificate-based payload signing approach to protect payloads from being tampered with. By utilizing the certificates to create payload envelopes, the device's management client can ensure secure transport between the device's management client and the Workload Fleet Management's web service.
-    - Message Envelope Details
-        - Once the edge device has a message prepared for the Workload Fleet Management's web service, it completes the following to secure the message.
-        - The device's management client calculates a digest and signature of the payload
-        - The device's management client adds an envelope around it that has:
-            - actual payload
-            - SHA of the payload, signed by the device certificate
-            - Identifier for the certificate that corresponds to the private key used to sign it. 
-                - This identifier MUST be the UUID provided by the WFM server. 
-        - The envelope is sent as the payload to the Workload Fleet Management's web service. 
-        - The Workload Fleet Management's web service treats the request's payload as envelope structure, and receives the certificate identifier.
-        - The Workload Fleet Management's web service computes digest from the payload, and verifies the signature using the device certification.
-        - The payload is then processed by the Workload Fleet Management's web service.
-    - Signing details
-        1. Generate a SHA-256 hash value for the request's body
-        2. Create a digital signature by using the message source certificates's private key to encrypt the the hash value
-        3. Base-64 encode the certificate's public key and the digital signature in the format of `<public key>;<digital signature>`
-        3. Include the base-64 encoded string in the request's `X-Payload-Signature` header
-    - Verifying Signed Payloads
-        1. Retrieve the public key from the `X-Payload-Signature` header
-        2. Decrypt the digital signature using the public key to get the original hash value
-        3. Generate a SHA-256 hash value for the requests's body
-        4. Ensure the generated hash value matches the hash value from the message
+    - Due to the limitations of utilizing mTLS with common OT infrastructure components, such as TLS terminating HTTPS load-balancer or a HTTPS proxy doing lawful inspection, Margo has adopted a certificate-based payload signing approach to protect payloads from being tampered with. By utilizing the certificates to create payload envelopes (HTTP Request body), the device's management client can ensure secure transport between the device's management client and the Workload Fleet Management's web service.
+    - For API security, Server side TLS 1.2 (minimum) is used, where the keys are obtained from the Server's X.509 Certificate as defined in standard HTTP over TLS
+    - For API integrity, the device's management client is issued a client specific X.509 certificate.
+    - The issuer of the server certificate is trusted under the assumption that the root CA download to the  Workload Fleet Management server occurs as a precondition to onboarding the devices 
+    - Similarly the issuer of the client certificate is  trusted under the assumption that root CA download to the device's management client occurs over a "protected" connection as part of the yet to be defined device onboarding procedure  
+    - Once the edge device has a message prepared for the Workload Fleet Management's web service, it completes the following to establish the integrity of the message.
+        - The device's management client calculates a digest (one way hash with SHA256) and signature of the payload (message Request/Response body)
+        - The device's management client creates a payload envelope as the HTTP Request comprising of :
+            - the actual payload 
+            - SHA256 hash of the payload
+        - The devices's management client inserts the following in the HTTP1.1 Header X-Body-Signature field :
+            - The base64 encoded signature of the SHA256 has of the payload, signed with the private-key of the Client X.509 certificate
+    - On receiving the message from the Device Client, The Workload Fleet Management's web service does the following :
+        - It identifies the client certificate from the Client-ID in the API Request URL 
+        - The Workload Fleet Management's web service reads the SHA256 hash in the HTTP Request body and then uses the public key of the Client's X.509 certificate to decode the signature in the HTTP1.1 Header's X-Body-Signature field.
+        - If the SHA256 hash in the HTTP Request body and the decoded signature in the HTTP Header's X-Body-Signature field match, then the payload is then processed by the Workload Fleet Management's web service.
+        - I the two do not match, the Workload Fleet MAnager will repond with HTTP Error 401 as given below, and discontinue the session
+          HTTP/1.1 401 Unauthorized
+            Content-Type: application/json
+            {
+              "error": "Invalid signature",
+              "message": "The X-Body-Signature header does not match the content of the request body."
+            }
+
 ### Unique Identifiers
 >Note: this section is still being formulated.
 - This proposal recommends the WFM create a client id to uniquely identify each client within the architecture. 
     - This client ID MUST be in the format of UUIDv4
+
 ### Management Interface Ports
 Required Ports to enable the edge to cloud communication
     - The goal of this API is to minimize the ports required for a customer to enable cloud to edge communication. 
