@@ -60,9 +60,9 @@ This SUP is aligned with the following Technical Feature.
     - Due to the limitations of utilizing mTLS with common OT infrastructure components, such as TLS terminating HTTPS load-balancer or a HTTPS proxy doing lawful inspection, Margo has adopted a certificate-based payload signing approach to protect payloads from being tampered with. By utilizing the certificates to create payload envelopes (HTTP Request body), the device's management client can ensure secure transport between the device's management client and the Workload Fleet Management's web service.
     - For API security, Server side TLS 1.2 (minimum) is used, where the keys are obtained from the Server's X.509 Certificate as defined in standard HTTP over TLS
     - For API integrity, the device's management client is issued a client specific X.509 certificate.
-    - The issuer of the server certificate is trusted under the assumption that the root CA download to the  Workload Fleet Management server occurs as a precondition to onboarding the devices 
-    - Similarly the issuer of the client certificate is  trusted under the assumption that root CA download to the device's management client occurs over a "protected" connection as part of the yet to be defined device onboarding procedure  
-    - Once the edge device has a message prepared for the Workload Fleet Management's web service, it completes the following to establish the integrity of the message.
+    - The issuer of the client X.509 certificate is trusted under the assumption that the root CA download to the  Workload Fleet Management server occurs as a precondition to onboarding the devices 
+    - Similarly the issuer of the server X.509 certificate is  trusted under the assumption that the root CA download to the device's management client occurs over a "protected" connection as part of the yet to be defined device onboarding procedure  
+    - Once the edge device has a message prepared for the Workload Fleet Management's web service, it completes the following to establish the integrity of the message :
         - The device's management client calculates a digest (one way hash with SHA256) and signature of the payload (message Request/Response body)
         - The device's management client creates a payload envelope as the HTTP Request comprising of :
             - the actual payload 
