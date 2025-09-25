@@ -69,6 +69,7 @@ This SUP is aligned with the following Technical Feature.
             - SHA256 hash of the payload
         - The devices's management client inserts the following in the HTTP1.1 Header X-Body-Signature field :
             - The base64 encoded signature of the SHA256 has of the payload, signed with the private-key of the Client X.509 certificate
+            Note: The private-key is not stored in the X.509 certificate, it may be stored in a .pem file and this information is used while generating the X.509 certificate for the client
     - On receiving the message from the Device Client, The Workload Fleet Management's web service does the following :
         - It identifies the client certificate from the Client-ID in the API Request URL 
         - The Workload Fleet Management's web service reads the SHA256 hash in the HTTP Request body and then uses the public key of the Client's X.509 certificate to decode the signature in the HTTP1.1 Header's X-Body-Signature field.
