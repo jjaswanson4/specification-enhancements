@@ -4,18 +4,17 @@ info:
   version: 1.0.0
   description: >
     API for managing workloads on Margo-compliant edge devices.
-    Communication is secured using server-side TLS (TLS 1.3 preferred), and payloads are signed using device certificates.
+    Communication is secured using server-side TLS (TLS 1.3 preferred),
+    and payloads are signed using X.509 certificates.
 
 servers:
   - url: https://wfm.margo.org/api/v1
     description: Workload Fleet Manager API
 
 security:
-  - ServerTLS: []
   - PayloadSignature: []
 
 paths:
-
   /onboarding/certificate:
     get:
       summary: Download Root CA certificate
@@ -29,13 +28,12 @@ paths:
                 properties:
                   certificate:
                     type: string
-                    description: Base64 encoded certificate text
+                    description: Base64-encoded certificate text
 
   /onboarding:
     post:
-      summary: Complete onboarding and receive credentials
+      summary: Complete onboarding with client certificate
       security:
-        - ServerTLS: []
         - PayloadSignature: []
       requestBody:
         required: true
@@ -46,7 +44,7 @@ paths:
               properties:
                 public_certificate:
                   type: string
-                  description: Client's public X.509 certificate
+                  description: Base64-encoded client certificate
       responses:
         '200':
           description: Onboarding successful
@@ -57,52 +55,15 @@ paths:
                 properties:
                   client_id:
                     type: string
-                  client_secret:
-                    type: string
                   endpoints:
                     type: array
                     items:
                       type: string
 
-  /token:
-    post:
-      summary: Retrieve bearer token
-      requestBody:
-        required: true
-        content:
-          application/x-www-form-urlencoded:
-            schema:
-              type: object
-              properties:
-                grant_type:
-                  type: string
-                  example: client_credentials
-                client_id:
-                  type: string
-                client_secret:
-                  type: string
-      responses:
-        '200':
-          description: Token response
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  access_token:
-                    type: string
-                  token_type:
-                    type: string
-                    example: Bearer
-                  expires_in:
-                    type: integer
-                    example: 3600
-
   /client/{clientId}/capabilities:
     post:
-      summary: Report client capabilities
+      summary: Report device capabilities
       security:
-        - ServerTLS: []
         - PayloadSignature: []
       parameters:
         - name: clientId
@@ -124,7 +85,6 @@ paths:
     post:
       summary: Report deployment status
       security:
-        - ServerTLS: []
         - PayloadSignature: []
       parameters:
         - name: clientId
@@ -149,21 +109,13 @@ paths:
 
 components:
   securitySchemes:
-    ServerTLS:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
-      description: >
-        Server-side TLS using X.509 certificates.
-        TLS 1.3 is preferred; TLS 1.2 is supported as fallback.
-        The client verifies the server certificate using a trusted Root CA.
     PayloadSignature:
       type: apiKey
       in: header
       name: X-Payload-Signature
       description: >
         Base64-encoded payload signature using SHA-256 and device certificate.
-        Format: <public_key>;<digital_signature>
+        Format: public_key;digital_signature
   schemas:
     DeviceCapabilities:
       type: object
