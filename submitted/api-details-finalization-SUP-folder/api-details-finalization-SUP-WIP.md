@@ -8,10 +8,11 @@ Nilanjan Samajder
 ## Summary
 
 This SUP is focused on finalizing the technical details pertaining to our previously approved REST API, for usage between the Device and the Workload Fleet Manager. 
-    - see the following [Link](https://github.com/margo/specification/issues/21) for a history on when the REST API was approved for the following functionalities
-        - Onboarding of the API Interface 
-        - Providing WFM with Device Capabilities information
-        - Providing WFM with workload deployment status updates
+
+- See the following [Link](https://github.com/margo/specification/issues/21) for a history on when the REST API was approved for the following functions:
+    - Onboarding of the API Interface 
+    - Providing WFM with Device Capabilities information
+    - Providing WFM with workload deployment status updates
 
 > Note: This SUP does not cover how the device receives and utilizes credentials to access application deployment components. i.e. Helm charts / OCI artifacts / Compose packages. 
 
@@ -41,8 +42,6 @@ This SUP is aligned with the following Technical Feature.
 
 
 ## Technical proposal
-
-> The SUP's technical details. There must be enough technical details that someone can take the information in this section and implement it on their own.
 
 ### General REST API information 
 - This proposal recommends a server-side TLS-enabled REST API operating over HTTP1.1.
@@ -85,9 +84,10 @@ This SUP is aligned with the following Technical Feature.
             }
 
 ### Unique Identifiers
->Note: this section is still being formulated.
 - This proposal recommends the WFM create a client id to uniquely identify each client within the architecture. 
     - This client ID MUST be in the format of UUIDv4
+
+> Note: This SUP does introduce a change in philosophy regarding the unique identifier, changing towards a more flexible client id that is separate from device id.  
 
 ### Management Interface Ports
 Required Ports to enable the edge to cloud communication
