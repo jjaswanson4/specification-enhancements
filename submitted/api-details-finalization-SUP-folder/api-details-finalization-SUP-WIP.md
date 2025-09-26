@@ -13,6 +13,8 @@ This SUP is focused on finalizing the technical details pertaining to our previo
         - Providing WFM with Device Capabilities information
         - Providing WFM with workload deployment status updates
 
+> Note: This SUP does not cover how the device receives and utilizes credentials to access application deployment components. i.e. Helm charts / OCI artifacts / Compose packages. 
+
 Technical Details the SUP aims to finalize in the specification:
 
 - Secure certificates utilized / format
@@ -51,14 +53,14 @@ This SUP is aligned with the following Technical Feature.
 - This proposal recommends the usage of x.509 certificates to represent both parties within the REST API construction.
     - These certificates are utilized to prove each participants identity, establish secure TLS session, and securely transport information in secure envelopes. 
 ### API Authentication Mechanism
-- Initial Trust via TLS
+- Initial Trust via TLS (version 1.3 or greater)
     - The device establishes a secure HTTPS connection using server-side TLS.
     - It validates the server’s identity using the public root CA certificate.
 > Note: Further onboarding details will be provided in a separate SUP submission.
 ### API Security / Integrity strategy
 - To ensure completeness in the description, I have copied over a section from the specification shown below
     - Due to the limitations of utilizing mTLS with common OT infrastructure components, such as TLS terminating HTTPS load-balancer or a HTTPS proxy doing lawful inspection, Margo has adopted a certificate-based payload signing approach to protect payloads from being tampered with. By utilizing the certificates to create payload envelopes (HTTP Request body), the device's management client can ensure secure transport between the device's management client and the Workload Fleet Management's web service.
-    - For API security, Server side TLS 1.2 (minimum) is used, where the keys are obtained from the Server's X.509 Certificate as defined in standard HTTP over TLS
+    - For API security, Server side TLS 1.3 (minimum) is used, where the keys are obtained from the Server's X.509 Certificate as defined in standard HTTP over TLS
     - For API integrity, the device's management client is issued a client specific X.509 certificate.
     - The issuer of the client X.509 certificate is trusted under the assumption that the root CA download to the  Workload Fleet Management server occurs as a precondition to onboarding the devices 
     - Similarly the issuer of the server X.509 certificate is  trusted under the assumption that the root CA download to the device's management client occurs over a "protected" connection as part of the yet to be defined device onboarding procedure  
@@ -98,6 +100,7 @@ Required Ports to enable the edge to cloud communication
 WIP for certain portions of this SUP regarding the prototype. Additionally, I have attached a WIP Open API specification within the SUP folder.
 
 ### Mermaid diagram detailing the interaction patterns
+
 ```mermaid
 sequenceDiagram
     autonumber
@@ -107,29 +110,33 @@ sequenceDiagram
     Note over Client,Server: 🔐 Initial Trust Establishment
 
     Client->>Server: GET /onboarding/certificate
-    Server-->>Client: certificate (base64-encoded Root CA)
+    Server-->>Client: base64-encoded Root CA certificate
+    Client-->>Client: injecting Root CA into trusted store
+# Root CA is now trusted in the TLS handshake
 
-    Note over Client,Server: 🔒 TLS Handshake
+    Note over Client,Server: 🔒 Standard TLS Handshake Start
     Client->>Server: TLS ClientHello (TLS versions, cipher suites, random)
     Server-->>Client: TLS ServerHello (chosen version, cipher, random)
-    Server-->>Client: X.509 certificate chain
-    Client->>Server: Client public X.509 certificate
+    Server-->>Client: X.509 certificate chain(server + intermediate(if applicable))
+    Client-->>Client: Verifies server cert chain based on RootCA
+    Note over Client,Server: 🔒 Standard TLS Handshake completed
+# standard TLS / but other flows can occur
+    Client->>Server: POST /onboarding with public_certificate (could exchange additional info)
+    
+    # Verification of client cert out of scope of this. Pre specify 
+    # approving this client can join the server. other things could be tied to the certificate. i.e. Cert supplied via Dell / serial number of device /
+    # FDO bootstrapping off of ownership vouchers could be integrated here as well. 
 
     Note over Server: Server verifies client cert and assigns UUID
-
-    Client->>Server: POST /onboarding with public_certificate
-    Server-->>Client: client_id, client_secret, endpoints list
-
-    Note over Client,Server: 🔑 Token Exchange
-
-    Client->>Server: POST /token (form-urlencoded: client_id, client_secret)
-    Server-->>Client: access_token (JWT), token_type: Bearer, expires_in: 3600
-
-    Note over Client,Server: 📡 Secure API Usage
+    Server-->>Client: 201 Created (client_id and endpoint list)
+    Note over Client,Server: 📡 Secure API Usage with Signed Payloads
 
     Client->>Server: POST /client/{clientId}/capabilities
     Server-->>Client: 201 Created
+    Note over Client,Server: Enrollment is complete
 
+    Note over Client,Server: Assumed Desired state has been transmitted via WFM(out of scope for this SUP)
+    Note over Client,Server: 📡 Secure API Usage with Signed Payloads
     Client->>Server: POST /client/{clientId}/deployment/{deploymentId}/status
     Server-->>Client: 201 Created
 ```
