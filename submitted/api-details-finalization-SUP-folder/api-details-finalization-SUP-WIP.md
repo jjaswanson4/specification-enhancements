@@ -64,47 +64,47 @@ This SUP is aligned with the following Technical Feature.
     - The issuer of the client X.509 certificate is trusted under the assumption that the root CA download to the  Workload Fleet Management server occurs as a precondition to onboarding the devices 
     - Similarly the issuer of the server X.509 certificate is  trusted under the assumption that the root CA download to the device's management client occurs over a "protected" connection as part of the yet to be defined device onboarding procedure
 #### Device Management Client
-    - Once the device management client has a message prepared for the Workload Fleet Management's web service, it MUST complete the following to establish the integrity of the message as defined in RFC 9421 :
-        - The device's management client MUST create SHA256 hash Message-Digest of the base64 encoded payload (HTTP Request Body). This forms the 'Content-Digest' parameter in the HTTP Header.
+- Once the device management client has a message prepared for the Workload Fleet Management's web service, it MUST complete the following to establish the integrity of the message as defined in RFC 9421 :
+    - The device's management client MUST create SHA256 hash Message-Digest of the base64 encoded payload (HTTP Request Body). This forms the 'Content-Digest' parameter in the HTTP Header.
+    ```
+        Content-Digest: sha-256=:<base64(SHA256(body))>:
+    ```
+    - The device management client MUST create a Signature Base String embedding the content-digest. An example is given below.
+    ```
+        @method: POST
+        @target-uri: https://api.example.com/resource
+        content-digest: sha-256=:<digest>:
+        @signature-params: ("@method" "@target-uri" "content-digest");created=1680575171;keyid="my-rsa-key"
+    ```
+    - The device management client MUST create the Signature field by signing the SHA256 hash of the Base64 encoded Signature Base String, using the client X.509 RSA Private Key 
+    - The devices's management client MUST insert the following in the HTTP1.1 Header :
+        - Content-Digest as formed above
+        - Signature-Input as given below, replacing the created and keyid parts appropriately :
         ```
-            Content-Digest: sha-256=:<base64(SHA256(body))>:
+            sig1=("@method" "@target-uri" "content-digest");created=<Put created timestamp here>;keyid="<put the Key-Name here>"
         ```
-        - The device management client MUST create a Signature Base String embedding the content-digest. An example is given below.
-        ```
-            @method: POST
-            @target-uri: https://api.example.com/resource
-            content-digest: sha-256=:<digest>:
-            @signature-params: ("@method" "@target-uri" "content-digest");created=1680575171;keyid="my-rsa-key"
-        ```
-        - The device management client MUST create the Signature field by signing the SHA256 hash of the Base64 encoded Signature Base String, using the client X.509 RSA Private Key 
-        - The devices's management client MUST insert the following in the HTTP1.1 Header :
-            - Content-Digest as formed above
-            - Signature-Input as given below, replacing the created and keyid parts appropriately :
-            ```
-                sig1=("@method" "@target-uri" "content-digest");created=<Put created timestamp here>;keyid="<put the Key-Name here>"
-            ```
-            - Signature as explained above
-            - The base64 encoded signature of the SHA256 has of the payload, signed with the private-key of the Client X.509 certificate
-            Note: The private-key is not stored in the X.509 certificate, it may be stored in a .pem file and this information is used while generating the X.509 certificate for the client
+        - Signature as explained above
+        - The base64 encoded signature of the SHA256 has of the payload, signed with the private-key of the Client X.509 certificate
+        Note: The private-key is not stored in the X.509 certificate, it may be stored in a .pem file and this information is used while generating the X.509 certificate for the client
 #### Workload Fleet Manager Web-Service           
-    - On receiving the message from the Device Client, The Workload Fleet Management's web service MUST do the following :
-        - It identifies the client certificate from the Client-ID in the API Request URL 
-        - The Workload Fleet Management's web service reads the following from the HTTP Request Header :
-            - Signature-Input
-            - Signature
-            - Content-Digest (if body is present)
-        - Use the Signature-Input in the header to determine which components were signed. Reconstruct the Signature Base canonical string using the actual values from the request including the SHA256 encoded content-digest from the received request body 
-        - Then extract the base64-encoded message signature from the Signature header, and also compute the message signature string using the X.509 public-key and the Signature Base string.
-        - If the message signature in the HTTP Header and the computed message signature match, then the payload is then processed by the Workload Fleet Management's web service.
-        - I the two do not match, the Workload Fleet Manager will repond with HTTP Error 401 as given below, and discontinue the session
-          ```
-          HTTP/1.1 401 Unauthorized
-            Content-Type: application/json
-            {
-              "error": "Invalid signature",
-              "message": "The X-Body-Signature header does not match the content of the request body."
-            }
-          ```
+- On receiving the message from the Device Client, The Workload Fleet Management's web service MUST do the following :
+    - It identifies the client certificate from the Client-ID in the API Request URL 
+    - The Workload Fleet Management's web service reads the following from the HTTP Request Header :
+        - Signature-Input
+        - Signature
+        - Content-Digest (if body is present)
+    - Use the Signature-Input in the header to determine which components were signed. Reconstruct the Signature Base canonical string using the actual values from the request including the SHA256 encoded content-digest from the received request body 
+    - Then extract the base64-encoded message signature from the Signature header, and also compute the message signature string using the X.509 public-key and the Signature Base string.
+    - If the message signature in the HTTP Header and the computed message signature match, then the payload is then processed by the Workload Fleet Management's web service.
+    - I the two do not match, the Workload Fleet Manager will repond with HTTP Error 401 as given below, and discontinue the session
+      ```
+      HTTP/1.1 401 Unauthorized
+        Content-Type: application/json
+        {
+          "error": "Invalid signature",
+          "message": "The X-Body-Signature header does not match the content of the request body."
+        }
+      ```
 ### Unique Identifiers
 - This proposal recommends the WFM create a client id to uniquely identify each client within the architecture. 
     - This client ID MUST be in the format of UUIDv4
