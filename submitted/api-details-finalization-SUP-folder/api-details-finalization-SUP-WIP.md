@@ -50,7 +50,8 @@ This SUP is aligned with the following Technical Feature.
 - This REST API should utilize a known root CA the client can download, which enables the TLS handshake and other onboarding credentials to be details out in a separate SUP.  
 ### Secure certificates utilized / format
 - This proposal recommends the usage of x.509 certificates to represent both parties within the REST API construction.
-    - These certificates are utilized to prove each participants identity, establish secure TLS session, and securely transport information in secure envelopes. 
+    - These certificates are utilized to prove each participants identity, establish secure TLS session, and securely transport information in secure envelopes.
+    - This proposal supports client authentication using X.509 certificates conforming to RFC 5280. Both RSA and ECC-based public key algorithms are accepted.
 ### API Authentication Mechanism
 - Initial Trust via TLS (version 1.3 or greater)
     - The device establishes a secure HTTPS connection using server-side TLS.
@@ -88,14 +89,14 @@ This SUP is aligned with the following Technical Feature.
         Note: The private-key is not stored in the X.509 certificate, it may be stored in a .pem file and this information is used while generating the X.509 certificate for the client
 #### Workload Fleet Manager Web-Service           
 - On receiving the message from the Device Client, The Workload Fleet Management's web service MUST do the following :
-    - It identifies the client certificate from the Client-ID in the API Request URL 
+    - It looks up the client certificate from the Client-ID in the API Request URL 
     - The Workload Fleet Management's web service reads the following from the HTTP Request Header :
         - Signature-Input
         - Signature
         - Content-Digest (if body is present)
     - Use the Signature-Input in the header to determine which components were signed. Reconstruct the Signature Base canonical string using the actual values from the request including the SHA256 encoded content-digest from the received request body 
-    - Then extract the base64-encoded message signature from the Signature header, and also compute the message signature string using the X.509 public-key and the Signature Base string.
-    - If the message signature in the HTTP Header and the computed message signature match, then the payload is then processed by the Workload Fleet Management's web service.
+    - Then extract the base64-encoded message signature from the Signature header, and also verifies the message signature string using the client's X.509 public-key.
+    - If the message signature in the HTTP Header and the verified message signature match, then the payload is then processed by the Workload Fleet Management's web service.
     - I the two do not match, the Workload Fleet Manager will repond with HTTP Error 401 as given below, and discontinue the session
       ```
       HTTP/1.1 401 Unauthorized
@@ -121,6 +122,13 @@ Required Ports to enable the edge to cloud communication
 ### Working Prototype
 WIP for certain portions of this SUP regarding the prototype. Additionally, I have attached a WIP Open API specification within the SUP folder.
 
+#### Open Source examples:
+- Full RFC 9421 implementation with support for RSA, ECDSA, HMAC
+     - https://github.com/lestrrat-go/htmsig
+- Feature-complete RFC 9421 implementation with RSA-PSS and RSA-v1_5 support
+     - https://github.com/yaronf/httpsign
+
+
 ### Mermaid diagram detailing the interaction patterns
 
 ```mermaid
@@ -129,12 +137,11 @@ sequenceDiagram
     participant Client
     participant Server
 
-    Note over Client,Server: 🔐 Initial Trust Establishment
-
+    Note over Client,Server: 🔐 Initial Trust Establishment. 
+    Note over Client,Server: This root CA certificate could alternatively been provided out of band. <br> e.g.: USB Stick, from Device Fleet management onboarding, FDO workflow.
     Client->>Server: GET /onboarding/certificate
     Server-->>Client: base64-encoded Root CA certificate
     Client-->>Client: injecting Root CA into trusted store
-# Root CA is now trusted in the TLS handshake
 
     Note over Client,Server: 🔒 Standard TLS Handshake Start
     Client->>Server: TLS ClientHello (TLS versions, cipher suites, random)
@@ -142,16 +149,24 @@ sequenceDiagram
     Server-->>Client: X.509 certificate chain(server + intermediate(if applicable))
     Client-->>Client: Verifies server cert chain based on RootCA
     Note over Client,Server: 🔒 Standard TLS Handshake completed
-# standard TLS / but other flows can occur
+    Note over Client,Server: Device Client onboarding begins
     Client->>Server: POST /onboarding with public_certificate (could exchange additional info)
-    
-    # Verification of client cert out of scope of this. Pre specify 
-    # approving this client can join the server. other things could be tied to the certificate. i.e. Cert supplied via Dell / serial number of device /
-    # FDO bootstrapping off of ownership vouchers could be integrated here as well. 
-
-    Note over Server: Server verifies client cert and assigns UUID
-    Server-->>Client: 201 Created (client_id and endpoint list)
-    Note over Client,Server: 📡 Secure API Usage with Signed Payloads
+    alt Public key not present in WFM prior to API call
+        Note over Server: Server verifies client certificate and assigns UUID
+        Server-->>Client: 201 Created { client_id, endpoint_list}
+    else Public key not trusted/invalid
+        Server-->>Client: 400 Bad Request {error: "Invalid certificate"}
+        Server-->>Client: 403 Forbidden{ error: "Client not registered"}
+    end
+    alt Public key present in WFM prior to API call
+        Note over Server: Server verifies client certificate and assigns UUID
+        Server-->>Client: 200 OK{ client_id, endpoint_list}
+    else Public key not trusted/invalid
+        Server-->>Client: 400 Bad Request {error: "Invalid certificate"}
+        Server-->>Client: 403 Forbidden{ error: "Client not registered"}
+    end
+    Note over Client,Server: Device Client onboarding Ends
+    Note over Client,Server: 📡 Secure API Usage with Signed Payloads can now begin
 
     Client->>Server: POST /client/{clientId}/capabilities
     Server-->>Client: 201 Created
@@ -162,6 +177,15 @@ sequenceDiagram
     Client->>Server: POST /client/{clientId}/deployment/{deploymentId}/status
     Server-->>Client: 201 Created
 ```
+
+#### Sequence Diagram Notes
+- Following Step 3: Root CA is now trusted in the TLS handshake
+- Diagram depicts a standard TLS flow, but additional steps in the handshake can occur.
+- (After post /onboarding) 
+    - Verification of client cert out of scope of this. Pre specify
+    - Step approves the client can join the server. Additional information can be tied to the certificate but are not required in this SUP. supporting information can also be transferred during this step approving this client can join the server. other things could be tied to the certificate. i.e. Cert supplied via Dell / serial number of device /
+    - FDO bootstrapping off of ownership vouchers could be integrated here as well. 
+
 ## Alternatives considered (optional)
 
 > List any alternative solutions considered while working on the SUP and the reason for not choosing them. If the SUP owner knows that there is a risk of a competing SUP, this section can be used to make their case ahead of any potential votes on why their solution is better.
