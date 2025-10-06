@@ -29,36 +29,68 @@ paths:
                   certificate:
                     type: string
                     description: Base64-encoded certificate text
-
   /onboarding:
-    post:
-      summary: Complete onboarding with client certificate
-      security:
-        - PayloadSignature: []
-      requestBody:
-        required: true
+  post:
+    requestBody:
+      content:
+        application/json:
+          schema:
+            properties:
+              public_certificate:
+                description: Base64-encoded client certificate
+                type: string
+            type: object
+      required: true
+    responses:
+      '200':
         content:
           application/json:
             schema:
-              type: object
               properties:
-                public_certificate:
+                client_id:
                   type: string
-                  description: Base64-encoded client certificate
-      responses:
-        '200':
-          description: Onboarding successful
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  client_id:
+                endpoints:
+                  items:
                     type: string
-                  endpoints:
-                    type: array
-                    items:
-                      type: string
+                  type: array
+              type: object
+        description: Certificate already present, onboarding successful.
+      '201':
+        content:
+          application/json:
+            schema:
+              properties:
+                client_id:
+                  type: string
+                endpoints:
+                  items:
+                    type: string
+                  type: array
+              type: object
+        description: New client onboarded successfully.
+      '400':
+        content:
+          application/json:
+            schema:
+              properties:
+                error:
+                  example: Invalid certificate
+                  type: string
+              type: object
+        description: Invalid certificate format or structure.
+      '403':
+        content:
+          application/json:
+            schema:
+              properties:
+                error:
+                  example: Client not registered
+                  type: string
+              type: object
+        description: Client certificate not trusted or not registered.
+    security:
+    - PayloadSignature: []
+    summary: Complete onboarding with client certificate
 
   /client/{clientId}/capabilities:
     post:
