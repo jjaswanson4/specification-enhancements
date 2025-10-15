@@ -14,7 +14,7 @@ This SUP is focused on finalizing the technical details pertaining to our previo
     - Providing WFM with Device Capabilities information
     - Providing WFM with workload deployment status updates
 
-> Note: This SUP does not cover how the device receives and utilizes credentials to access application deployment components. i.e. Helm charts / OCI artifacts / Compose packages. 
+> Note: This SUP does not cover how the device receives and utilizes credentials to access application deployment components, i.e, Helm charts / OCI artifacts / Compose packages. 
 
 Technical Details the SUP aims to finalize in the specification:
 
