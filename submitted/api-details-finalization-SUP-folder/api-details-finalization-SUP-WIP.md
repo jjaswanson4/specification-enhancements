@@ -97,7 +97,7 @@ This SUP is aligned with the following Technical Feature.
     - Use the Signature-Input in the header to determine which components were signed. Reconstruct the Signature Base canonical string using the actual values from the request including the SHA256 encoded content-digest from the received request body 
     - Then extract the base64-encoded message signature from the Signature header, and also verifies the message signature string using the client's X.509 public-key.
     - If the message signature in the HTTP Header and the verified message signature match, then the payload is then processed by the Workload Fleet Management's web service.
-    - I the two do not match, the Workload Fleet Manager will repond with HTTP Error 401 as given below, and discontinue the session
+    - If the two do not match, the Workload Fleet Manager will respond with HTTP Error 401 as given below, and discontinue the session
       ```
       HTTP/1.1 401 Unauthorized
         Content-Type: application/json
