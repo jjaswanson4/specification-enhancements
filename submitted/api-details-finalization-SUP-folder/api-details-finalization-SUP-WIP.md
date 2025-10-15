@@ -82,7 +82,7 @@ This SUP is aligned with the following Technical Feature.
         - Content-Digest as formed above
         - Signature-Input as given below, replacing the created and keyid parts appropriately :
         ```
-            sig1=("@method" "@target-uri" "content-digest");created=<Put created timestamp here>;keyid="<put the Key-Name here>"
+            sig1=("@method" "@target-uri" "Content-Digest");created=<Put created timestamp here>;keyid="<put the Key-Name here>"
         ```
         - Signature as explained above
         - The base64 encoded signature of the SHA256 has of the payload, signed with the private-key of the Client X.509 certificate
