@@ -75,7 +75,7 @@ This SUP is aligned with the following Technical Feature.
         @method: POST
         @target-uri: https://api.example.com/resource
         Content-Digest: sha-256=:<digest>:
-        @signature-params: ("@method" "@target-uri" "content-digest");created=1680575171;keyid="my-rsa-key"
+        @signature-params: ("@method" "@target-uri" "Content-Digest");created=1680575171;keyid="my-rsa-key"
     ```
     - The device management client MUST create the Signature field by signing the SHA256 hash of the Base64 encoded Signature Base String, using the client X.509 RSA Private Key 
     - The devices's management client MUST insert the following in the HTTP1.1 Header :
