@@ -149,21 +149,16 @@ sequenceDiagram
     Server-->>Client: X.509 certificate chain(server + intermediate(if applicable))
     Client-->>Client: Verifies server cert chain based on RootCA
     Note over Client,Server: 🔒 Standard TLS Handshake completed
+    WFMUser->>Server: Opportunity for user to manually upload client certificate
     Note over Client,Server: Device Client onboarding begins
     Client->>Server: POST /onboarding with public_certificate (could exchange additional info)
-    alt Public key not present in WFM prior to API call
+    WFMUser->>Server: Opportunity for user to approve or reject client onboarding
+    alt Public key trusted/user approved
         Note over Server: Server verifies client certificate and assigns UUID
-        Server-->>Client: 201 Created { client_id, endpoint_list}
-    else Public key not trusted/invalid
+        Server-->>Client: 201 Created { client_id }
+    else Public key invalid/Client rejected
         Server-->>Client: 400 Bad Request {error: "Invalid certificate"}
-        Server-->>Client: 403 Forbidden{ error: "Client not registered"}
-    end
-    alt Public key present in WFM prior to API call
-        Note over Server: Server verifies client certificate and assigns UUID
-        Server-->>Client: 200 OK{ client_id, endpoint_list}
-    else Public key not trusted/invalid
-        Server-->>Client: 400 Bad Request {error: "Invalid certificate"}
-        Server-->>Client: 403 Forbidden{ error: "Client not registered"}
+        Server-->>Client: 403 Forbidden{ error: "Client rejected"}
     end
     Note over Client,Server: Device Client onboarding Ends
     Note over Client,Server: 📡 Secure API Usage with Signed Payloads can now begin
