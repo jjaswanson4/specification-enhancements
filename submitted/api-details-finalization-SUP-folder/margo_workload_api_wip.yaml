@@ -49,10 +49,6 @@ paths:
               properties:
                 client_id:
                   type: string
-                endpoints:
-                  items:
-                    type: string
-                  type: array
               type: object
         description: Certificate already present, onboarding successful.
       '201':
@@ -62,10 +58,6 @@ paths:
               properties:
                 client_id:
                   type: string
-                endpoints:
-                  items:
-                    type: string
-                  type: array
               type: object
         description: New client onboarded successfully.
       '400':
@@ -84,10 +76,10 @@ paths:
             schema:
               properties:
                 error:
-                  example: Client not registered
+                  example: Client rejected
                   type: string
               type: object
-        description: Client certificate not trusted or not registered.
+        description: Client certificate not trusted or client rejected.
     security:
     - PayloadSignature: []
     summary: Complete onboarding with client certificate
